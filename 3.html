@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>WebMidi.js Quick Start</title>
+    <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <script src="https://unpkg.com/pts/dist/pts.min.js"></script>
+    <link rel="stylesheet" href="organ.css">
+
+
+  </head>
+  
+  <body>
+
+    <div id="pt"style="width: 100%; height: 600px; margin: 30px auto 0;"></div>
+
+    <script>
+
+      //variables
+      var lastNote = 0;
+      var lastVelocity = 0;
+      var lastOctave = 0;
+      var lastNoteName= "C";
+      var lastNoteAccidental = "";
+      var lastNoteColor = 0;
+      var lastNoteFullName ="C"
+      var world;
+      var savedAlpha = lastVelocity/127;
+      var newAlpha = lastVelocity/127;
+      
+      let mapFunc = (key) => {
+          let map = {
+              "C": 0,
+              "C#": 29,
+              "D": 59,
+              "D#": 89,
+              "E": 119,
+              "F": 149,
+              "F#": 179,
+              "G": 209,
+              "G#": 239,
+              "A": 269,
+              "A#": 299,
+              "B": 329              
+          }
+      return map[key];
+      }
+
+// Source code licensed under Apache License 2.0. 
+// Copyright © 2017 William Ngan. (https://github.com/williamngan/pts)
+
+window.demoDescription = "Physics simulation with various polygons and circles. Move pointer to control the triangle.";
+
+Pts.quickStart( "#pt", "#000" );
+var sound;
+  var recording = false;
+  var rainbow = ["#f03", "#f90", "#fe6", "#3c0", "#0f6", "#03f", "#60f"];
+
+  // Draw button
+  function recordButton() {
+    form.fillOnly( recording ? "rgba(0,0,0,.2)" : "#f06").rect( [[0,0], [50,50]] );
+    if (!recording || !sound) {
+      form.fillOnly('#fff').circle( Circle.fromCenter( [25,25], 8 ) );
+    } else {
+      form.fillOnly("#fff").rect( [[18, 18], [32,32]] );
+    }
+  }
+
+  function toggleRecord() {
+    if ( Geom.withinBound( space.pointer, [0,0], [50,50] ) ) {
+      if (!recording) {
+        Sound.input().then( s => { sound = s.analyze( 128 ); });
+      } else {
+        sound.stop();
+      }
+      recording = !recording;
+    }
+  }
+
+//// Demo code starts (anonymous function wrapper is optional) ---
+
+(function() {
+
+
+    
+
+  space.add( {
+
+    start: (bound, space) => {
+     
+      world = new World( space.innerBound, 0.99, new Pt(0, 500) );
+     
+
+      let unit = (space.size.x+space.size.y) / 150;
+      
+      // Create notes
+
+      let noteC = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 4 ), 1 );
+      let noteCS = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 5 ), 1 );
+      let noteD = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 6 ), 1 );
+      let noteDS = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 7 ), 1 );
+      let noteE = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 8 ), 1 );
+      let noteF = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 10 ), 1 );
+      let noteFS = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 11 ), 1 );
+      let noteG = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 12 ), 1 );
+      let noteGS = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 13 ), 1 );
+      let noteA = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 14 ), 1 );
+      let noteAS  = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 15 ), 1 );
+      let noteB = Body.fromGroup( Polygon.fromCenter( space.center.subtract(100,50), unit*4, 16 ), 1 );
+      
+      // add to world
+      world
+        .add(noteC, "C")
+        .add(noteCS, "C#")
+        .add(noteD, "D")
+        .add(noteDS, "D#")
+        .add(noteE, "E")
+        .add(noteF, "F")
+        .add(noteFS, "F#")
+        .add(noteG, "G")
+        .add(noteGS, "G#")
+        .add(noteA, "A")
+        .add(noteAS, "A#")
+        .add(noteB, "B");
+
+
+
+      let pts = Create.distributeRandom( space.innerBound, 20 );
+
+      // Create particles and hit them with a random impulse
+      for (let i=0, len=pts.length; i<len; i++) {
+        let p = new Particle( pts[i] ).size(Math.random()*unit*5 );
+        p.mass=0.001;
+        p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
+        world.add( p );
+     
+      }
+
+
+    },
+
+
+    animate: (time, ftime) => {
+        if (sound && sound.playable) {
+        let td = sound.timeDomainTo( space.size );
+        let band = space.size.y/8;
+        rainbow.forEach( (r, i) => {
+          form.strokeOnly( r, band*rainbow.length - i*band ).line(td);  
+        });
+      }
+      recordButton();
+           // hsl max value range (360,1,1,1) - c is the same for all polys
+           let cu = Color.hsl( Color.maxValues("hsl") );
+          cu.h = lastNoteColor;
+          cu.l = lastVelocity/127;
+          let c = Color.HSLtoRGB( cu ).toString("rgba");
+
+          let cu2 = Color.hsl( Color.maxValues("hsl") );
+          cu2.h = lastNoteColor+10;
+          cu2.l = lastVelocity/127;
+          let c2 = Color.HSLtoRGB( cu2 ).toString("rgba");
+          grad1 = form.gradient([c, c2]);
+
+      world.drawParticles( (p, i) => {
+        form.alpha(1);
+        form.fill(c).stroke(c2,p.radius/2).point( p, p.radius, "circle" ) ;
+        form.alpha(0.8);
+        form.strokeOnly(c2, p.radius*2).line( [p, space.center] );
+      
+    });
+        
+      
+
+
+      world.drawBodies( (b, i) => { 
+        newAlpha = lastVelocity/127;
+        form.alpha(1);
+  
+        // hsl max value range (360,1,1,1) - d is different for each
+        let cu = Color.hsl( Color.maxValues("hsl") );
+          cu.h = i*30;
+          cu.s = lastVelocity/127;
+          cu.l=0.5;
+          let d = Color.HSLtoRGB( cu ).toString("rgba");
+        let cu2 = Color.hsl( Color.maxValues("hsl") );
+          cu2.h = 10+(i*30);
+          cu2.s = lastVelocity/127;
+          cu2.l=0.4;
+          let d2 = Color.HSLtoRGB( cu2 ).toString("rgba");  
+        grad = form.gradient([d, d2]);
+        
+        form.fillOnly(grad(b)).polygon( b ); 
+        form.strokeOnly("rgba(0,0,0,0.1", 2);
+        b.linksToLines().forEach( (l) => form.line(l) ); // visualize the edge constraints
+      });
+      savedAlpha = newAlpha;
+      world.update( ftime );
+    },
+
+  
+    action: (type, x, y) => {
+      if (type === "up") {
+        toggleRecord();
+      }
+    },
+
+    resize: (bound, evt) => {
+      if (world) world.bound = space.innerBound;
+    }
+
+
+
+    
+  });
+  
+  space.bindMouse().bindTouch();
+  space.play();
+
+})();
+
+        //webmidi code
+
+           // Enable WEBMIDI.js and trigger the onEnabled() function when ready
+           WebMidi
+          .enable()
+          .then(onEnabled)
+          .catch(err => alert(err));
+      
+        // Function triggered when WEBMIDI.js is ready
+        function onEnabled() {
+
+            if (WebMidi.inputs.length < 1) {
+             console.log("No device detected.")
+            } else {
+              WebMidi.inputs.forEach((device, index) => {
+                 console.log(`${index}: ${device.name} <br>`)
+              });
+            }
+
+            const mySynth = WebMidi.inputs[0];
+            // const mySynth = WebMidi.getInputByName("TYPE NAME HERE!")
+
+            mySynth.channels[1].addListener("noteon", e => {
+              lastNote = `${e.note.number}`;
+              lastVelocity = `${e.note.rawAttack}`;
+              lastOctave = `${e.note.octave}`;
+              lastNoteName = `${e.note.name}`;
+              if (`${e.note.accidental}` !== 'undefined') {
+                lastNoteAccidental = `${e.note.accidental}`;
+              }
+              else {
+                lastNoteAccidental = "";
+              }
+              lastNoteFullName = lastNoteName+lastNoteAccidental;
+              lastNoteColor = mapFunc(lastNoteFullName);
+              
+                //world.body(lastNoteFullName)[0].hit( lastVelocity*3, -20,(lastOctave-3)*4 );
+                world.body(lastNoteFullName)[0].hit( -(lastOctave-3)*lastVelocity*10, lastVelocity*-2);
+     
+ 
+            });
+
+        }
+
+      
+      
+    </script>
+
+
+
+  </body>
+
+</html>

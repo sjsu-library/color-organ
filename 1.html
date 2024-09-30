@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>WebMidi.js Quick Start</title>
+    <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <script src="https://unpkg.com/pts/dist/pts.min.js"></script>
+
+
+  </head>
+  
+  <body>
+    <h1>Color Organ First Try</h1>
+    <div id="pt" style="width: 800px; height: 600px; margin: 30px auto 0;"></div>
+
+    <script>
+
+      //variables
+      var lastNote = 0;
+      var lastVelocity = 0;
+      var lastOctave = 0;
+      var lastNoteName= "C";
+      var lastNoteAccidental = "";
+      var lastNoteColor = 0;
+      let mapFunc = (key) => {
+          let map = {
+              "C": 0,
+              "C#": 29,
+              "D": 59,
+              "D#": 89,
+              "E": 119,
+              "F": 149,
+              "F#": 179,
+              "G": 209,
+              "G#": 239,
+              "A": 269,
+              "A#": 299,
+              "B": 329              
+          }
+      return map[key];
+      }
+
+      //// Demo code starts (anonymous function wrapper is optional) ---
+      
+      (function() { 
+      
+        // A function to recusively draw interpolated squares up to max depth
+        var interpolate = (pts, _t, depth, max, bg, fg) => {
+          if (depth > max) return;
+          let g = new Group();
+          let t = Num.boundValue( _t, 0, 1 );
+      
+          for (let i=1, len=pts.length; i<len; i++) {
+            g.push( Geom.interpolate( pts[i-1], pts[i], t ) );
+          }
+          g.push( Geom.interpolate( pts[pts.length-1], pts[0], t ) );
+          
+          form.fillOnly( (depth%2===0) ? bg : fg ).polygon( g );
+          interpolate( g, t+0.02, depth+1, max, bg, fg );
+        }
+      
+      
+        // Pts quick start mode. 
+        var run = Pts.quickStart("#pt", "#fe3");
+        //amimation loop - access the midi values in this loop to change colors and other elements
+        run( (time, ftime) => {
+          
+          let size = space.size.$multiply( 0.5).minValue().value;
+          let rect = Rectangle.corners( [space.center.$subtract( size ), space.center.$add( size )] );    
+          let t = (space.pointer.x / space.size.x) + (time%10000/10000);
+
+            // hsl max value range (360,1,1,1)
+          let cu = Color.hsl( Color.maxValues("hsl") );
+          cu.h = lastNoteColor;
+          cu.l = lastVelocity/127;
+          let c = Color.HSLtoRGB( cu ).toString("rgb");
+          interpolate( rect, t, 0, 20, c, 'black' );
+          
+        });
+      
+      })();
+
+        //webmidi code
+
+           // Enable WEBMIDI.js and trigger the onEnabled() function when ready
+           WebMidi
+          .enable()
+          .then(onEnabled)
+          .catch(err => alert(err));
+      
+        // Function triggered when WEBMIDI.js is ready
+        function onEnabled() {
+
+            if (WebMidi.inputs.length < 1) {
+             console.log("No device detected.")
+            } else {
+              WebMidi.inputs.forEach((device, index) => {
+                 console.log(`${index}: ${device.name} <br>`)
+              });
+            }
+
+            const mySynth = WebMidi.inputs[0];
+            // const mySynth = WebMidi.getInputByName("TYPE NAME HERE!")
+
+            mySynth.channels[1].addListener("noteon", e => {
+              lastNote = `${e.note.number}`;
+              lastVelocity = `${e.note.rawAttack}`;
+              lastOctave = `${e.note.octave}`;
+              lastNoteName = `${e.note.name}`;
+              if (`${e.note.accidental}` !== 'undefined') {
+                lastNoteAccidental = `${e.note.accidental}`;
+              }
+              else {
+                lastNoteAccidental = "";
+              }
+              lastNoteColor = mapFunc(lastNoteName+lastNoteAccidental);
+              console.log(lastNoteColor);
+            });
+
+        }
+
+      
+      
+    </script>
+
+
+
+  </body>
+
+</html>
