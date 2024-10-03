@@ -147,7 +147,7 @@ Pts.quickStart( "#pt", "#fff" );
 
 
       world.drawBodies( (b, i) => { 
-        newAlpha = lastVelocity/127;
+        newAlpha = 0.5+lastVelocity/254;
         form.alpha(1);
   
         // hsl max value range (360,1,1,1) - d is different for each
