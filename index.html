@@ -136,9 +136,9 @@ Pts.quickStart( "#pt", "#fff" );
           }
           
           let c = Color.HSLtoRGB( cu ).toString("rgba");
-        form.alpha(cu.s/5);
+        form.alpha(cu.s/2);
         form.fillOnly(c).point( p, p.radius*50, "circle" ) ;
-        form.alpha(cu.s/6);
+        form.alpha(cu.s/3);
         form.strokeOnly(c, 2).line( [p, space.center] );
       
     });
@@ -147,7 +147,7 @@ Pts.quickStart( "#pt", "#fff" );
 
 
       world.drawBodies( (b, i) => { 
-        newAlpha = 0.5+lastVelocity/254;
+        newAlpha = lastVelocity/127;
         form.alpha(1);
   
         // hsl max value range (360,1,1,1) - d is different for each
