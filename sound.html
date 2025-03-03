@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- Specifies the document type and version of HTML (HTML5) -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Sets the character encoding for the document to UTF-8 -->
+    <title>WebMidi.js Quick Start</title>
+    <!-- Sets the title of the web page, which appears in the browser tab -->
+    <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <!-- Links to the WebMidi.js library, enabling MIDI device interaction in the browser -->
+    <script src="https://unpkg.com/pts/dist/pts.min.js"></script>
+    <!--Links to the tone.js library for generating synthesized sound-->
+    <script src="http://unpkg.com/tone"></script>
+    <!-- Links to the Pts.js library, used for creating and managing visualizations on the web -->
+    <link rel="stylesheet" href="organ.css">
+    <!-- Links to an external CSS stylesheet named 'organ.css' that styles elements on the web page -->
+</head>
+  
+ <body>
+    <!-- Main container for the visualization -->
+    <div id="pt" style="width: 100%; height: 600px; margin: 30px auto 0;"></div>
+
+    <script>
+        // Declare variables to hold the state of the last MIDI note played
+        var lastNote = 0;
+        var lastVelocity = 0;
+        var lastOctave = 0;
+        var lastNoteName= "C";
+        var lastNoteAccidental = "";
+        var lastNoteColor = 0;
+        var lastNoteFullName = "C"
+        var world; // variable for the physics world in Pts.js
+        var savedAlpha = lastVelocity/127; // save the alpha value based on velocity for opacity
+        var newAlpha = lastVelocity/127; // current alpha based on last note's velocity
+        var pastNotes = []; // array to store past notes for visual effects
+        var noteCounter = 0; // counter for notes
+        var circleCount = 20; // total number of circles to display
+        var notes =["C", "CS","D","DS","E","F","FS","G","GS","A","AS","B"];
+        var noteRatios ={"C": 1, "C#": 2,"D": 1.125,"D#": 2.25 ,"E": 1.25,"F": 1.333333333,"F#": 2.8125,"G": 1.5,"G#": 1.6875,"A": 1.666666667,"A#": 1.8,"B": 1.875}
+        //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
+        var drones = [];
+
+        // Function to map note names to color hues
+        let mapFunc = (key) => {
+            let map = {
+                "C": 0, "C#": 29, "D": 59, "D#": 89, 
+                "E": 119, "F": 149, "F#": 179, "G": 209, 
+                "G#": 239, "A": 269, "A#": 299, "B": 329              
+            }
+            return map[key]; // return hue value based on note name
+        }
+           // Function to map note names to rations for just intonation
+           let mapRatio = (key) => {
+            let map = noteRatios
+            return map[key]; // return hue value based on note name
+        }
+
+// Source code licensed under Apache License 2.0. 
+// Copyright © 2017 William Ngan. (https://github.com/williamngan/pts)
+
+// Description of the current demo for reference
+window.demoDescription = "Physics simulation with various polygons and circles. Move pointer to control the triangle.";
+
+// Initialize Pts.js on the specified element with white background
+Pts.quickStart("#pt", "#fff");
+// Draw button to turn sound on and off
+var sound;
+  var recording = false;
+ 
+
+  // Draw button
+  function recordButton() {
+    form.fillOnly( recording ? "rgba(0,0,0,.2)" : "#f06").rect( [[0,0], [50,50]] );
+    if (!recording || !sound) {
+      form.fillOnly('#fff').circle( Circle.fromCenter( [25,25], 8 ) );
+    } else {
+      form.fillOnly("#fff").rect( [[18, 18], [32,32]] );
+    }
+  }
+
+  function toggleRecord() {
+    if ( Geom.withinBound( space.pointer, [0,0], [50,50] ) ) {
+      if (!recording) {
+       Tone.start();
+        console.log("audio is ready");
+      } else {
+       //right now button doesn't toggle, just enables audio
+      }
+      recording = !recording;
+    }
+  }
+
+ // Tone.js code - create 12 oscilators that are always on
+ const reverb = new Tone.Reverb().toDestination();
+ const limiter = new Tone.Limiter(-5).connect(reverb);
+var base = 256
+ const oscC = new Tone.FMOscillator(base, "sine").connect(limiter).start();
+ const oscCS = new Tone.FMOscillator(base*2, "sine").connect(limiter).start();
+ const oscD = new Tone.FMOscillator(base*1.125, "sine").connect(limiter).start();
+ const oscDS = new Tone.FMOscillator(base*2.25, "sine").connect(limiter).start();
+ const oscE = new Tone.FMOscillator(base*1.25, "sine").connect(limiter).start();
+ const oscF = new Tone.FMOscillator(base*(4/3), "sine").connect(limiter).start();
+ const oscFS = new Tone.FMOscillator(base*2.8125, "sine").connect(limiter).start();
+ const oscG = new Tone.FMOscillator(base*1.5, "sine").connect(limiter).start();
+ const oscGS = new Tone.FMOscillator(base*1.6875, "sine").connect(limiter).start();
+ const oscA = new Tone.FMOscillator(base*(5/3), "sine").connect(limiter).start();
+ const oscAS = new Tone.FMOscillator(base*1.8, "sine").connect(limiter).start();
+ const oscB = new Tone.FMOscillator(base*1.875, "sine").connect(limiter).start();
+
+
+
+
+
+ //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
+
+
+
+//// Demo code starts (anonymous function wrapper is optional) ---
+
+(function() {
+
+  // Add simulation space with custom configurations
+  space.add({
+    // Setup function that configures initial state of the simulation space
+    start: (bound, space) => {
+      // Create a new physics world with friction coefficient and gravity settings
+      world = new World(space.innerBound, 0.99, new Pt(0, 500));
+
+      // Calculate unit size based on the size of the space for consistent scaling
+      let unit = (space.size.x + space.size.y) / 150;
+      
+      // Create notes
+
+      // Create a polygon for note C, centered and sized based on the 'unit' calculation
+      let noteC = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
+      // Set the mass of note C, uncomment to change the default mass
+      //noteC.mass=0.1;
+      
+      // Create polygons for each musical note, altering the number of sides to distinguish different notes
+      let noteCS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
+      let noteD = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
+      let noteDS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), 1);
+      let noteE = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
+      let noteF = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
+      let noteFS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
+      let noteG = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
+      let noteGS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
+      let noteA = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
+      let noteAS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), 1);
+      let noteB = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
+
+      
+      // add to world
+      world
+        .add(noteC, "C")
+        .add(noteCS, "C#")
+        .add(noteD, "D")
+        .add(noteDS, "D#")
+        .add(noteE, "E")
+        .add(noteF, "F")
+        .add(noteFS, "F#")
+        .add(noteG, "G")
+        .add(noteGS, "G#")
+        .add(noteA, "A")
+        .add(noteAS, "A#")
+        .add(noteB, "B");
+
+
+
+      let pts = Create.distributeRandom( space.innerBound, circleCount );
+   
+      // Create particles and hit them with a random impulse
+      for (let i=0, len=pts.length; i<len; i++) {
+        let p = new Particle( pts[i] ).size(Math.random()*unit*2 );
+        p.mass=1;
+        p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
+        world.add( p );
+        const drone = new Tone.Oscillator(base, "sawtooth").connect(limiter).start();
+        drone.volume.value = -50;
+        drones.push(drone);
+     
+      }
+      console.log(drones)
+
+    },
+    
+    //
+
+    animate: (time, ftime) => {
+        recordButton();
+
+
+      world.drawParticles( (p, i) => {
+             // hsl max value range (360,1,1,1) - c is the same for all polys
+            let cu = Color.hsl( Color.maxValues("hsl") );
+          if (pastNotes.length>i) { 
+          cu.h = pastNotes[pastNotes.length-i-1].color;
+          cu.l = 0.5;
+          cu.s = pastNotes[pastNotes.length-i-1].velocity/127;
+          }
+          else {
+            cu.l=0;
+            cu.s=0.1;
+          }
+          
+          let c = Color.HSLtoRGB( cu ).toString("rgba");
+        form.alpha(cu.s/2);
+        form.fillOnly(c).point( p, p.radius*50, "circle" ) ;
+        form.alpha(cu.s/3);
+        form.strokeOnly(c, 2).line( [p, space.center] );
+      
+    });
+        
+      
+
+
+      world.drawBodies( (b, i) => { 
+        newAlpha = lastVelocity/127;
+        form.alpha(1);
+  
+        // hsl max value range (360,1,1,1) - d is different for each
+        let cu = Color.hsl( Color.maxValues("hsl") );
+          cu.h = i*30;
+          cu.s = lastVelocity/127;
+          cu.l=0.5;
+          let d = Color.HSLtoRGB( cu ).toString("rgba");
+        let cu2 = Color.hsl( Color.maxValues("hsl") );
+          cu2.h = 10+(i*30);
+          cu2.s = lastVelocity/127;
+          cu2.l=0.4;
+          let d2 = Color.HSLtoRGB( cu2 ).toString("rgba");  
+        grad = form.gradient([d, d2]);
+        
+        form.fillOnly(grad(b)).polygon( b ); 
+        form.strokeOnly("rgba(0,0,0,0.1", 2);
+        b.linksToLines().forEach( (l) => form.line(l) ); // visualize the edge constraints
+        
+        for (let i=0, len=b.length; i<len; i++) {
+            form.strokeOnly(d, 2).line( [b[i], space.center] );
+        };
+    
+    });
+      savedAlpha = newAlpha;
+
+     // Main oscillators are controlled by the position of each shape - height controls volume, horizontal positon controls FM modulation 
+      var volumeMultiplier = 2
+      var volumeAdd = -20
+    var h = space.height+100;
+    var w = space.width;
+    var volC = 40 * Math.log((h-world.body("C")[0].y)/h);
+    if (volC <= 0) {
+        oscC.volume.value = volC*volumeMultiplier+volumeAdd;
+    };
+    var modC = 10*(w-h-world.body("C")[0].x)/w;
+    oscC.modulationIndex.value = modC;
+    var volCS = 40 * Math.log((h-world.body("C#")[0].y)/h);
+    if (volCS <= 0) {
+        oscCS.volume.value = volCS*volumeMultiplier+volumeAdd;
+    };
+    var modCS = 10*(w-h-world.body("C#")[0].x)/w;
+    oscCS.modulationIndex.value = modCS;
+    var volD = 40 * Math.log((h-world.body("D")[0].y)/h);
+    if (volD <= 0) {
+        oscD.volume.value = volD*volumeMultiplier+volumeAdd;
+    };
+    var modD = 10*(w-h-world.body("D")[0].x)/w;
+    oscD.modulationIndex.value = modD;
+    var volDS = 40 * Math.log((h-world.body("D#")[0].y)/h);
+    if (volDS <= 0) {
+        oscDS.volume.value = volDS*volumeMultiplier+volumeAdd;
+    };
+    var modDS = 10*(w-h-world.body("D#")[0].x)/w;
+    oscDS.modulationIndex.value = modDS;
+    var volE = 40 * Math.log((h-world.body("E")[0].y)/h);
+    if (volE <= 0) {
+        oscE.volume.value = volE*volumeMultiplier+volumeAdd;
+    };
+    var modE = 10*(w-h-world.body("E")[0].x)/w;
+    oscE.modulationIndex.value = modE;
+    var volF = 40 * Math.log((h-world.body("F")[0].y)/h);
+    if (volF <= 0) {
+        oscF.volume.value = volF*volumeMultiplier+volumeAdd;
+    };
+    var modF = 10*(w-h-world.body("F")[0].x)/w;
+    oscF.modulationIndex.value = modF;
+    var volFS = 40 * Math.log((h-world.body("F#")[0].y)/h);
+    if (volFS <= 0) {
+        oscFS.volume.value = volFS*volumeMultiplier+volumeAdd;
+    };
+    var modFS = 10*(w-h-world.body("F#")[0].x)/w;
+    oscFS.modulationIndex.value = modFS;
+    var volG = 40 * Math.log((h-world.body("G")[0].y)/h);
+    if (volG <= 0) {
+        oscG.volume.value = volG*volumeMultiplier+volumeAdd;
+    };
+    var modG = 10*(w-h-world.body("G")[0].x)/w;
+    oscG.modulationIndex.value = modG;
+    var volGS = 40 * Math.log((h-world.body("G#")[0].y)/h);
+    if (volGS <= 0) {
+        oscGS.volume.value = volGS*volumeMultiplier+volumeAdd;
+    };
+    var modGS = 10*(w-h-world.body("G#")[0].x)/w;
+    oscGS.modulationIndex.value = modGS;
+    var volA = 40 * Math.log((h-world.body("A")[0].y)/h);
+    if (volA <= 0) {
+        oscA.volume.value = volA*volumeMultiplier+volumeAdd;
+    };
+    var modA = 10*(w-h-world.body("A")[0].x)/w;
+    oscA.modulationIndex.value = modA;
+    var volAS = 40 * Math.log((h-world.body("A#")[0].y)/h);
+    if (volAS <= 0) {
+        oscAS.volume.value = volAS*volumeMultiplier+volumeAdd;
+    };
+    var modAS = 10*(w-h-world.body("A#")[0].x)/w;
+    oscAS.modulationIndex.value = modAS;
+    var volB = 20 * Math.log((h-world.body("B")[0].y)/h);
+    if (volB <= 0) {
+        oscB.volume.value = volB*volumeMultiplier+volumeAdd;
+    };
+    var modB = 10*(w-h-world.body("B")[0].x)/w;
+    oscB.modulationIndex.value = modB;
+
+
+      world.update( ftime );
+    },
+
+  
+    //action:( type, px, py) => {
+      //world.body("triangle")[0].position = new Pt(px, py);
+    //},
+    // Clicking on the record button activates audio
+    action: (type, x, y) => {
+      if (type === "up") {
+        toggleRecord();
+      }
+    },
+
+    resize: (bound, evt) => {
+      if (world) world.bound = space.innerBound;
+    }
+
+
+
+    
+  });
+  
+  space.bindMouse().bindTouch();
+  space.play();
+
+})();
+
+   
+
+
+        //webmidi code
+
+           // Enable WEBMIDI.js and trigger the onEnabled() function when ready
+           WebMidi
+          .enable()
+          .then(onEnabled)
+          .catch(err => alert(err));
+      
+        // Function triggered when WEBMIDI.js is ready
+        function onEnabled() {
+
+            if (WebMidi.inputs.length < 1) {
+             console.log("No device detected.")
+            } else {
+              WebMidi.inputs.forEach((device, index) => {
+                 console.log(`${index}: ${device.name} <br>`)
+              });
+            }
+
+            const mySynth = WebMidi.inputs[0];
+            // const mySynth = WebMidi.getInputByName("TYPE NAME HERE!")
+
+            mySynth.channels[1].addListener("noteon", e => {
+              lastNote = `${e.note.number}`;
+              lastVelocity = `${e.note.rawAttack}`;
+              lastOctave = `${e.note.octave}`;
+              lastNoteName = `${e.note.name}`;
+              
+              if (`${e.note.accidental}` !== 'undefined') {
+                lastNoteAccidental = `${e.note.accidental}`;
+              }
+              else {
+                lastNoteAccidental = "";
+              }
+              lastNoteFullName = lastNoteName+lastNoteAccidental;
+              lastNoteColor = mapFunc(lastNoteFullName);
+              lastRatio = mapRatio(lastNoteFullName);
+              console.log(lastRatio)
+              let thisNote = {"color":lastNoteColor, "velocity":lastVelocity}
+              pastNotes.push(thisNote);
+              
+              
+              
+                //world.body(lastNoteFullName)[0].hit( lastVelocity*3, -20,(lastOctave-3)*4 );
+                world.body(lastNoteFullName)[0].hit( -(lastOctave-3)*lastVelocity*2, lastVelocity*-2);
+               drones[noteCounter].frequency.value = base/32*lastRatio*(lastOctave+3);
+               console.log(drones[noteCounter].frequency.value)
+               noteCounter++
+              if (noteCounter == circleCount) {
+                noteCounter = 0;
+              }
+            });
+
+        }
+
+      
+      
+    </script>
+
+
+
+  </body>
+
+</html>
