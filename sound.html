@@ -34,9 +34,10 @@
         var newAlpha = lastVelocity/127; // current alpha based on last note's velocity
         var pastNotes = []; // array to store past notes for visual effects
         var noteCounter = 0; // counter for notes
-        var circleCount = 20; // total number of circles to display
+        var circleCount = 10; // total number of circles to display
         var notes =["C", "CS","D","DS","E","F","FS","G","GS","A","AS","B"];
         var noteRatios ={"C": 1, "C#": 2,"D": 1.125,"D#": 2.25 ,"E": 1.25,"F": 1.333333333,"F#": 2.8125,"G": 1.5,"G#": 1.6875,"A": 1.666666667,"A#": 1.8,"B": 1.875}
+        var noteNumbers = {"C": 0, "C#": 1,"D": 2,"D#": 3 ,"E": 4,"F": 5,"F#": 6,"G": 7,"G#": 8,"A": 9,"A#": 10,"B": 11}
         //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
         var drones = [];
 
@@ -49,9 +50,14 @@
             }
             return map[key]; // return hue value based on note name
         }
-           // Function to map note names to rations for just intonation
+           // Function to map note names to ratios for just intonation
            let mapRatio = (key) => {
             let map = noteRatios
+            return map[key]; // return hue value based on note name
+        }
+        // Function to map note names to array numbers
+        let mapNoteNumbers = (key) => {
+            let map = noteNumbers
             return map[key]; // return hue value based on note name
         }
 
@@ -93,21 +99,54 @@ var sound;
  // Tone.js code - create 12 oscilators that are always on
  const reverb = new Tone.Reverb().toDestination();
  const limiter = new Tone.Limiter(-5).connect(reverb);
+ const delay2 = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(limiter);
+ const delay = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(delay2);
+  // create an autofilter and start it's LFO
+  const autoFilter = new Tone.AutoFilter({
+        frequency : 0.2 ,
+        type : "sawtooth3",
+        depth : 1 ,
+        baseFrequency : 100,
+        octaves : 5 ,
+        filter : {
+          type : "lowpass",
+          rolloff : -24 ,
+          Q : 2
+        }
+
+    }).connect(delay).start();
+
+    const autoFilter2 = new Tone.AutoFilter({
+        frequency : 0.25 ,
+        type : "sawtooth3",
+        depth : 1 ,
+        baseFrequency : 500,
+        octaves : 2.5 ,
+        filter : {
+          type : "lowpass",
+          rolloff : -24 ,
+          Q : 2
+        }
+
+    }).connect(autoFilter).start();
+
 var base = 256
- const oscC = new Tone.FMOscillator(base, "sine").connect(limiter).start();
- const oscCS = new Tone.FMOscillator(base*2, "sine").connect(limiter).start();
- const oscD = new Tone.FMOscillator(base*1.125, "sine").connect(limiter).start();
- const oscDS = new Tone.FMOscillator(base*2.25, "sine").connect(limiter).start();
- const oscE = new Tone.FMOscillator(base*1.25, "sine").connect(limiter).start();
- const oscF = new Tone.FMOscillator(base*(4/3), "sine").connect(limiter).start();
- const oscFS = new Tone.FMOscillator(base*2.8125, "sine").connect(limiter).start();
- const oscG = new Tone.FMOscillator(base*1.5, "sine").connect(limiter).start();
- const oscGS = new Tone.FMOscillator(base*1.6875, "sine").connect(limiter).start();
- const oscA = new Tone.FMOscillator(base*(5/3), "sine").connect(limiter).start();
- const oscAS = new Tone.FMOscillator(base*1.8, "sine").connect(limiter).start();
- const oscB = new Tone.FMOscillator(base*1.875, "sine").connect(limiter).start();
+ const oscC = new Tone.FMOscillator(base, "sine").connect(delay).start();
+ const oscCS = new Tone.FMOscillator(base*2, "sine").connect(delay).start();
+ const oscD = new Tone.FMOscillator(base*1.125, "sine").connect(delay).start();
+ const oscDS = new Tone.FMOscillator(base*2.25, "sine").connect(delay).start();
+ const oscE = new Tone.FMOscillator(base*1.25, "sine").connect(delay).start();
+ const oscF = new Tone.FMOscillator(base*(4/3), "sine").connect(delay).start();
+ const oscFS = new Tone.FMOscillator(base*2.8125, "sine").connect(delay).start();
+ const oscG = new Tone.FMOscillator(base*1.5, "sine").connect(delay).start();
+ const oscGS = new Tone.FMOscillator(base*1.6875, "sine").connect(delay).start();
+ const oscA = new Tone.FMOscillator(base*(5/3), "sine").connect(delay).start();
+ const oscAS = new Tone.FMOscillator(base*1.8, "sine").connect(delay).start();
+ const oscB = new Tone.FMOscillator(base*1.875, "sine").connect(delay).start();
 
-
+var oscillators = [oscC, oscCS, oscD, oscDS, oscE, oscF, oscFS, oscG, oscGS, oscA, oscAS, oscB]
+console.log(oscillators)
+console.log("test");
 
 
 
@@ -168,6 +207,10 @@ var base = 256
 
 
       let pts = Create.distributeRandom( space.innerBound, circleCount );
+     
+
+
+    
    
       // Create particles and hit them with a random impulse
       for (let i=0, len=pts.length; i<len; i++) {
@@ -175,8 +218,8 @@ var base = 256
         p.mass=1;
         p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
         world.add( p );
-        const drone = new Tone.Oscillator(base, "sawtooth").connect(limiter).start();
-        drone.volume.value = -50;
+        const drone = new Tone.PWMOscillator(base, 0.3+1/1000).connect(autoFilter2).start();
+        drone.volume.value = -70;
         drones.push(drone);
      
       }
@@ -377,7 +420,7 @@ var base = 256
             mySynth.channels[1].addListener("noteon", e => {
               lastNote = `${e.note.number}`;
               lastVelocity = `${e.note.rawAttack}`;
-              lastOctave = `${e.note.octave}`;
+              lastOctave = parseInt(`${e.note.octave}`);
               lastNoteName = `${e.note.name}`;
               
               if (`${e.note.accidental}` !== 'undefined') {
@@ -389,7 +432,7 @@ var base = 256
               lastNoteFullName = lastNoteName+lastNoteAccidental;
               lastNoteColor = mapFunc(lastNoteFullName);
               lastRatio = mapRatio(lastNoteFullName);
-              console.log(lastRatio)
+              lastNoteNumber = mapNoteNumbers(lastNoteFullName);
               let thisNote = {"color":lastNoteColor, "velocity":lastVelocity}
               pastNotes.push(thisNote);
               
@@ -397,7 +440,19 @@ var base = 256
               
                 //world.body(lastNoteFullName)[0].hit( lastVelocity*3, -20,(lastOctave-3)*4 );
                 world.body(lastNoteFullName)[0].hit( -(lastOctave-3)*lastVelocity*2, lastVelocity*-2);
-               drones[noteCounter].frequency.value = base/32*lastRatio*(lastOctave+3);
+                console.log("octave="+lastOctave);
+                console.log(lastOctave+4);
+
+                oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+2);
+                autoFilter.filter.Q.value=lastVelocity/16;
+                autoFilter2.filter.Q.value=lastVelocity/8;
+                delay.feedback.value=lastVelocity/128;
+                delay2.feedback.value=lastVelocity/128;
+                delay.delayTime.value=(lastOctave+1)/11
+                delay2.delayTime.value=0.05+(lastOctave+1)/11
+                 delay.feedback.value=lastVelocity/128;
+                console.log(delay.delayTime.value)
+               drones[noteCounter].frequency.value = base/2*lastRatio*(lastOctave+2);
                console.log(drones[noteCounter].frequency.value)
                noteCounter++
               if (noteCounter == circleCount) {
