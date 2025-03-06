@@ -18,7 +18,7 @@
   
  <body>
     <!-- Main container for the visualization -->
-    <div id="pt" style="width: 100%; height: 800px; margin: 30px auto 0;"></div>
+    <div id="pt" style="width: 100%; height: 700px; margin: 30px auto 0;"></div>
 
     <script>
         // Declare variables to hold the state of the last MIDI note played
@@ -219,7 +219,7 @@ console.log("test");
         p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
         world.add( p );
         const drone = new Tone.PWMOscillator(base, 0.3+1/1000).connect(autoFilter2).start();
-        drone.volume.value = -70;
+        drone.volume.value = -60;
         drones.push(drone);
      
       }
@@ -443,7 +443,7 @@ console.log("test");
                 console.log("octave="+lastOctave);
                 console.log(lastOctave+4);
 
-                oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+2);
+                oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+1);
                 autoFilter.filter.Q.value=lastVelocity/16;
                 autoFilter2.filter.Q.value=lastVelocity/8;
                 delay.feedback.value=lastVelocity/128;
