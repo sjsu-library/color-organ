@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
     <!-- Links to the WebMidi.js library, enabling MIDI device interaction in the browser -->
     <script src="https://unpkg.com/pts/dist/pts.min.js"></script>
+    <!--Links to the tone.js library for generating synthesized sound-->
+    <script src="https://unpkg.com/tone"></script>
     <!-- Links to the Pts.js library, used for creating and managing visualizations on the web -->
     <link rel="stylesheet" href="organ.css">
     <!-- Links to an external CSS stylesheet named 'organ.css' that styles elements on the web page -->
@@ -16,7 +18,7 @@
   
  <body>
     <!-- Main container for the visualization -->
-    <div id="pt" style="width: 100%; height: 1000px; margin: 30px auto 0;"></div>
+    <div id="pt" style="width: 100%; height: 600px; margin: 30px auto 0;"></div>
 
     <script>
         // Declare variables to hold the state of the last MIDI note played
@@ -32,7 +34,12 @@
         var newAlpha = lastVelocity/127; // current alpha based on last note's velocity
         var pastNotes = []; // array to store past notes for visual effects
         var noteCounter = 0; // counter for notes
-        var circleCount = 20; // total number of circles to display
+        var circleCount = 10; // total number of circles to display
+        var notes =["C", "CS","D","DS","E","F","FS","G","GS","A","AS","B"];
+        var noteRatios ={"C": 1, "C#": 2,"D": 1.125,"D#": 2.25 ,"E": 1.25,"F": 1.333333333,"F#": 2.8125,"G": 1.5,"G#": 1.6875,"A": 1.666666667,"A#": 1.8,"B": 1.875}
+        var noteNumbers = {"C": 0, "C#": 1,"D": 2,"D#": 3 ,"E": 4,"F": 5,"F#": 6,"G": 7,"G#": 8,"A": 9,"A#": 10,"B": 11}
+        //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
+        var drones = [];
 
         // Function to map note names to color hues
         let mapFunc = (key) => {
@@ -41,6 +48,16 @@
                 "E": 119, "F": 149, "F#": 179, "G": 209, 
                 "G#": 239, "A": 269, "A#": 299, "B": 329              
             }
+            return map[key]; // return hue value based on note name
+        }
+           // Function to map note names to ratios for just intonation
+           let mapRatio = (key) => {
+            let map = noteRatios
+            return map[key]; // return hue value based on note name
+        }
+        // Function to map note names to array numbers
+        let mapNoteNumbers = (key) => {
+            let map = noteNumbers
             return map[key]; // return hue value based on note name
         }
 
@@ -52,6 +69,90 @@ window.demoDescription = "Physics simulation with various polygons and circles. 
 
 // Initialize Pts.js on the specified element with white background
 Pts.quickStart("#pt", "#fff");
+// Draw button to turn sound on and off
+var sound;
+  var recording = false;
+ 
+
+  // Draw button
+  function recordButton() {
+    form.fillOnly( recording ? "rgba(0,0,0,.2)" : "#f06").rect( [[0,0], [50,50]] );
+    if (!recording || !sound) {
+      form.fillOnly('#fff').circle( Circle.fromCenter( [25,25], 8 ) );
+    } else {
+      form.fillOnly("#fff").rect( [[18, 18], [32,32]] );
+    }
+  }
+
+  function toggleRecord() {
+    if ( Geom.withinBound( space.pointer, [0,0], [50,50] ) ) {
+      if (!recording) {
+       Tone.start();
+        console.log("audio is ready");
+      } else {
+       //right now button doesn't toggle, just enables audio
+      }
+      recording = !recording;
+    }
+  }
+
+ // Tone.js code - create 12 oscilators that are always on
+ const reverb = new Tone.Reverb().toDestination();
+ const limiter = new Tone.Limiter(-5).connect(reverb);
+ const delay2 = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(limiter);
+ const delay = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(delay2);
+  // create an autofilter and start it's LFO
+  const autoFilter = new Tone.AutoFilter({
+        frequency : 0.2 ,
+        type : "sawtooth3",
+        depth : 1 ,
+        baseFrequency : 100,
+        octaves : 5 ,
+        filter : {
+          type : "lowpass",
+          rolloff : -24 ,
+          Q : 2
+        }
+
+    }).connect(delay).start();
+
+    const autoFilter2 = new Tone.AutoFilter({
+        frequency : 0.25 ,
+        type : "sawtooth3",
+        depth : 1 ,
+        baseFrequency : 500,
+        octaves : 2.5 ,
+        filter : {
+          type : "lowpass",
+          rolloff : -24 ,
+          Q : 2
+        }
+
+    }).connect(autoFilter).start();
+
+var base = 256
+ const oscC = new Tone.FMOscillator(base, "sine").connect(delay).start();
+ const oscCS = new Tone.FMOscillator(base*2, "sine").connect(delay).start();
+ const oscD = new Tone.FMOscillator(base*1.125, "sine").connect(delay).start();
+ const oscDS = new Tone.FMOscillator(base*2.25, "sine").connect(delay).start();
+ const oscE = new Tone.FMOscillator(base*1.25, "sine").connect(delay).start();
+ const oscF = new Tone.FMOscillator(base*(4/3), "sine").connect(delay).start();
+ const oscFS = new Tone.FMOscillator(base*2.8125, "sine").connect(delay).start();
+ const oscG = new Tone.FMOscillator(base*1.5, "sine").connect(delay).start();
+ const oscGS = new Tone.FMOscillator(base*1.6875, "sine").connect(delay).start();
+ const oscA = new Tone.FMOscillator(base*(5/3), "sine").connect(delay).start();
+ const oscAS = new Tone.FMOscillator(base*1.8, "sine").connect(delay).start();
+ const oscB = new Tone.FMOscillator(base*1.875, "sine").connect(delay).start();
+
+var oscillators = [oscC, oscCS, oscD, oscDS, oscE, oscF, oscFS, oscG, oscGS, oscA, oscAS, oscB]
+console.log(oscillators)
+console.log("test");
+
+
+
+ //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
+
+
 
 //// Demo code starts (anonymous function wrapper is optional) ---
 
@@ -106,22 +207,30 @@ Pts.quickStart("#pt", "#fff");
 
 
       let pts = Create.distributeRandom( space.innerBound, circleCount );
+     
 
+
+    
+   
       // Create particles and hit them with a random impulse
       for (let i=0, len=pts.length; i<len; i++) {
         let p = new Particle( pts[i] ).size(Math.random()*unit*2 );
         p.mass=1;
         p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
         world.add( p );
+        const drone = new Tone.PWMOscillator(base, 0.3+1/1000).connect(autoFilter2).start();
+        drone.volume.value = -70;
+        drones.push(drone);
      
       }
-
+      console.log(drones)
 
     },
-
+    
+    //
 
     animate: (time, ftime) => {
-  
+        recordButton();
 
 
       world.drawParticles( (p, i) => {
@@ -175,6 +284,86 @@ Pts.quickStart("#pt", "#fff");
     
     });
       savedAlpha = newAlpha;
+
+     // Main oscillators are controlled by the position of each shape - height controls volume, horizontal positon controls FM modulation 
+      var volumeMultiplier = 2
+      var volumeAdd = -20
+    var h = space.height+100;
+    var w = space.width;
+    var volC = 40 * Math.log((h-world.body("C")[0].y)/h);
+    if (volC <= 0) {
+        oscC.volume.value = volC*volumeMultiplier+volumeAdd;
+    };
+    var modC = 10*(w-h-world.body("C")[0].x)/w;
+    oscC.modulationIndex.value = modC;
+    var volCS = 40 * Math.log((h-world.body("C#")[0].y)/h);
+    if (volCS <= 0) {
+        oscCS.volume.value = volCS*volumeMultiplier+volumeAdd;
+    };
+    var modCS = 10*(w-h-world.body("C#")[0].x)/w;
+    oscCS.modulationIndex.value = modCS;
+    var volD = 40 * Math.log((h-world.body("D")[0].y)/h);
+    if (volD <= 0) {
+        oscD.volume.value = volD*volumeMultiplier+volumeAdd;
+    };
+    var modD = 10*(w-h-world.body("D")[0].x)/w;
+    oscD.modulationIndex.value = modD;
+    var volDS = 40 * Math.log((h-world.body("D#")[0].y)/h);
+    if (volDS <= 0) {
+        oscDS.volume.value = volDS*volumeMultiplier+volumeAdd;
+    };
+    var modDS = 10*(w-h-world.body("D#")[0].x)/w;
+    oscDS.modulationIndex.value = modDS;
+    var volE = 40 * Math.log((h-world.body("E")[0].y)/h);
+    if (volE <= 0) {
+        oscE.volume.value = volE*volumeMultiplier+volumeAdd;
+    };
+    var modE = 10*(w-h-world.body("E")[0].x)/w;
+    oscE.modulationIndex.value = modE;
+    var volF = 40 * Math.log((h-world.body("F")[0].y)/h);
+    if (volF <= 0) {
+        oscF.volume.value = volF*volumeMultiplier+volumeAdd;
+    };
+    var modF = 10*(w-h-world.body("F")[0].x)/w;
+    oscF.modulationIndex.value = modF;
+    var volFS = 40 * Math.log((h-world.body("F#")[0].y)/h);
+    if (volFS <= 0) {
+        oscFS.volume.value = volFS*volumeMultiplier+volumeAdd;
+    };
+    var modFS = 10*(w-h-world.body("F#")[0].x)/w;
+    oscFS.modulationIndex.value = modFS;
+    var volG = 40 * Math.log((h-world.body("G")[0].y)/h);
+    if (volG <= 0) {
+        oscG.volume.value = volG*volumeMultiplier+volumeAdd;
+    };
+    var modG = 10*(w-h-world.body("G")[0].x)/w;
+    oscG.modulationIndex.value = modG;
+    var volGS = 40 * Math.log((h-world.body("G#")[0].y)/h);
+    if (volGS <= 0) {
+        oscGS.volume.value = volGS*volumeMultiplier+volumeAdd;
+    };
+    var modGS = 10*(w-h-world.body("G#")[0].x)/w;
+    oscGS.modulationIndex.value = modGS;
+    var volA = 40 * Math.log((h-world.body("A")[0].y)/h);
+    if (volA <= 0) {
+        oscA.volume.value = volA*volumeMultiplier+volumeAdd;
+    };
+    var modA = 10*(w-h-world.body("A")[0].x)/w;
+    oscA.modulationIndex.value = modA;
+    var volAS = 40 * Math.log((h-world.body("A#")[0].y)/h);
+    if (volAS <= 0) {
+        oscAS.volume.value = volAS*volumeMultiplier+volumeAdd;
+    };
+    var modAS = 10*(w-h-world.body("A#")[0].x)/w;
+    oscAS.modulationIndex.value = modAS;
+    var volB = 20 * Math.log((h-world.body("B")[0].y)/h);
+    if (volB <= 0) {
+        oscB.volume.value = volB*volumeMultiplier+volumeAdd;
+    };
+    var modB = 10*(w-h-world.body("B")[0].x)/w;
+    oscB.modulationIndex.value = modB;
+
+
       world.update( ftime );
     },
 
@@ -182,6 +371,12 @@ Pts.quickStart("#pt", "#fff");
     //action:( type, px, py) => {
       //world.body("triangle")[0].position = new Pt(px, py);
     //},
+    // Clicking on the record button activates audio
+    action: (type, x, y) => {
+      if (type === "up") {
+        toggleRecord();
+      }
+    },
 
     resize: (bound, evt) => {
       if (world) world.bound = space.innerBound;
@@ -196,6 +391,9 @@ Pts.quickStart("#pt", "#fff");
   space.play();
 
 })();
+
+   
+
 
         //webmidi code
 
@@ -222,8 +420,9 @@ Pts.quickStart("#pt", "#fff");
             mySynth.channels[1].addListener("noteon", e => {
               lastNote = `${e.note.number}`;
               lastVelocity = `${e.note.rawAttack}`;
-              lastOctave = `${e.note.octave}`;
+              lastOctave = parseInt(`${e.note.octave}`);
               lastNoteName = `${e.note.name}`;
+              
               if (`${e.note.accidental}` !== 'undefined') {
                 lastNoteAccidental = `${e.note.accidental}`;
               }
@@ -232,18 +431,33 @@ Pts.quickStart("#pt", "#fff");
               }
               lastNoteFullName = lastNoteName+lastNoteAccidental;
               lastNoteColor = mapFunc(lastNoteFullName);
+              lastRatio = mapRatio(lastNoteFullName);
+              lastNoteNumber = mapNoteNumbers(lastNoteFullName);
               let thisNote = {"color":lastNoteColor, "velocity":lastVelocity}
               pastNotes.push(thisNote);
-              console.log(pastNotes);
-              noteCounter++
-              if (noteCounter > circleCount) {
-                noteCounter = 0;
-              }
+              
+              
               
                 //world.body(lastNoteFullName)[0].hit( lastVelocity*3, -20,(lastOctave-3)*4 );
-                world.body(lastNoteFullName)[0].hit( -(lastOctave-3)*lastVelocity*5, lastVelocity*-20);
-     
- 
+                world.body(lastNoteFullName)[0].hit( -(lastOctave-3)*lastVelocity*2, lastVelocity*-2);
+                console.log("octave="+lastOctave);
+                console.log(lastOctave+4);
+
+                oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+2);
+                autoFilter.filter.Q.value=lastVelocity/16;
+                autoFilter2.filter.Q.value=lastVelocity/8;
+                delay.feedback.value=lastVelocity/128;
+                delay2.feedback.value=lastVelocity/128;
+                delay.delayTime.value=(lastOctave+1)/11
+                delay2.delayTime.value=0.05+(lastOctave+1)/11
+                 delay.feedback.value=lastVelocity/128;
+                console.log(delay.delayTime.value)
+               drones[noteCounter].frequency.value = base/2*lastRatio*(lastOctave+2);
+               console.log(drones[noteCounter].frequency.value)
+               noteCounter++
+              if (noteCounter == circleCount) {
+                noteCounter = 0;
+              }
             });
 
         }
