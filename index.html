@@ -290,7 +290,7 @@ console.log("test");
       var volumeAdd = -20
     var h = space.height+100;
     var w = space.width;
-    var volC = 40 * Math.log((h-world.body("C")[0].y)/h)+(h/2);
+    var volC = 40 * Math.log((h-world.body("C")[0].y)/((3*h)/2));
     if (volC <= 0) {
         oscC.volume.value = volC*volumeMultiplier+volumeAdd;
     };
