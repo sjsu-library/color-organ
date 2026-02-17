@@ -18,7 +18,7 @@
   
  <body>
     <!-- Main container for the visualization -->
-    <div id="pt" style="width: 100%; height: 950px; margin: 30px auto 0;"></div>
+    <div id="pt" style="width: 100%; height: 900px; margin: 30px auto 0;"></div>
 
     <script>
         // Declare variables to hold the state of the last MIDI note played
@@ -163,7 +163,7 @@ console.log("test");
     // Setup function that configures initial state of the simulation space
     start: (bound, space) => {
       // Create a new physics world with friction coefficient and gravity settings
-      world = new World(space.innerBound, 0.99, new Pt(0, 500));
+      world = new World(space.innerBound, 0.75, new Pt(0, 500));
 
       // Calculate unit size based on the size of the space for consistent scaling
       let unit = (space.size.x + space.size.y) / 150;
