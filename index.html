@@ -163,7 +163,7 @@ console.log("test");
     // Setup function that configures initial state of the simulation space
     start: (bound, space) => {
       // Create a new physics world with friction coefficient and gravity settings
-      world = new World(space.innerBound, 0.75, new Pt(0, 500));
+      world = new World(space.innerBound, 0.99, new Pt(0, 500));
 
       // Calculate unit size based on the size of the space for consistent scaling
       let unit = (space.size.x + space.size.y) / 150;
@@ -176,17 +176,17 @@ console.log("test");
       //noteC.mass=0.1;
       
       // Create polygons for each musical note, altering the number of sides to distinguish different notes
-      let noteCS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
-      let noteD = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
-      let noteDS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), 1);
-      let noteE = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
-      let noteF = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
-      let noteFS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
-      let noteG = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
-      let noteGS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), 1);
-      let noteA = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), 1);
-      let noteAS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), 1);
-      let noteB = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), 1);
+      let noteCS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), .5);
+      let noteD = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), .5);
+      let noteDS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), .5);
+      let noteE = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), .5);
+      let noteF = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), .5);
+      let noteFS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), .5);
+      let noteG = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), .5);
+      let noteGS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 5), .5);
+      let noteA = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 6), .5);
+      let noteAS = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 7), .5);
+      let noteB = Body.fromGroup(Polygon.fromCenter(space.center.subtract(100, 50), unit * 4, 4), .5);
 
       
       // add to world
