@@ -123,8 +123,8 @@ var sound;
         frequency : 0.2 ,
         type : "sawtooth3",
         depth : 1 ,
-        baseFrequency : 100,
-        octaves : 5 ,
+        baseFrequency : 500,
+        octaves : 1 ,
         filter : {
           type : "lowpass",
           rolloff : -24 ,
@@ -137,7 +137,7 @@ var sound;
         frequency : 0.25 ,
         type : "sawtooth3",
         depth : 1 ,
-        baseFrequency : 500,
+        baseFrequency : 400,
         octaves : 2.5 ,
         filter : {
           type : "lowpass",
@@ -169,7 +169,6 @@ console.log(oscillators);
 
 
  //1	2	1.125	2.25	1.25	1.333333333	2.8125	1.5	1.6875	1.666666667	1.8	1.875
-
 
 
 //// Demo code starts (anonymous function wrapper is optional) ---
@@ -237,7 +236,7 @@ console.log(oscillators);
         p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
         world.add( p );
         const drone = new Tone.PWMOscillator(base, 0.3+1/1000).connect(autoFilter2).start();
-        drone.volume.value = -90;
+        drone.volume.value = -100;
         drones.push(drone);
      
       }
@@ -305,7 +304,7 @@ console.log(oscillators);
 
      // Main oscillators are controlled by the position of each shape - height controls volume, horizontal positon controls FM modulation 
       var volumeMultiplier = 0.5
-      var volumeAdd = 0
+      var volumeAdd = -10
     var h = space.height+100;
     var w = space.width*2;
     var volC = 40 * (Math.log((h-world.body("C")[0].y)/h));
@@ -462,8 +461,8 @@ console.log(oscillators);
                 console.log(lastOctave+4);
 
                 oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+1);
-                autoFilter.filter.Q.value=lastVelocity/32;
-                autoFilter2.filter.Q.value=lastVelocity/16;
+                autoFilter.filter.Q.value=lastVelocity/12;
+                autoFilter2.filter.Q.value=lastVelocity/6;
                 autoFilter3.filter.baseFrequency.value=100+lastVelocity*100+lastOctave*10;
                 delay.feedback.value=lastVelocity/512;
                 delay2.feedback.value=lastVelocity/512;
