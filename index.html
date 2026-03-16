@@ -99,8 +99,25 @@ var sound;
  // Tone.js code - create 12 oscilators that are always on
  const reverb = new Tone.Reverb().toDestination();
  const limiter = new Tone.Limiter(-5).connect(reverb);
- const delay2 = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(limiter);
- const delay = new Tone.FeedbackDelay({wet:0.15,delayTime:1,feeback:0.5}).connect(delay2);
+ const delay2 = new Tone.FeedbackDelay({wet:0.1,delayTime:1,feeback:0.5}).connect(limiter);
+ const delay = new Tone.FeedbackDelay({wet:0.1,delayTime:1,feeback:0.5}).connect(delay2);
+
+    const autoFilter3 = new Tone.AutoFilter({
+        frequency : 1 ,
+        type : "sawtooth3",
+        depth : 0.1 ,
+        baseFrequency : 100,
+        octaves : 3 ,
+        filter : {
+          type : "lowpass",
+          rolloff : -12 ,
+          Q : 0
+        }
+
+    }).connect(delay).start();
+
+
+
   // create an autofilter and start it's LFO
   const autoFilter = new Tone.AutoFilter({
         frequency : 0.2 ,
@@ -130,23 +147,24 @@ var sound;
 
     }).connect(autoFilter).start();
 
+
 var base = 256
- const oscC = new Tone.FMOscillator(base, "sine").connect(delay).start();
- const oscCS = new Tone.FMOscillator(base*2, "sine").connect(delay).start();
- const oscD = new Tone.FMOscillator(base*1.125, "sine").connect(delay).start();
- const oscDS = new Tone.FMOscillator(base*2.25, "sine").connect(delay).start();
- const oscE = new Tone.FMOscillator(base*1.25, "sine").connect(delay).start();
- const oscF = new Tone.FMOscillator(base*(4/3), "sine").connect(delay).start();
- const oscFS = new Tone.FMOscillator(base*2.8125, "sine").connect(delay).start();
- const oscG = new Tone.FMOscillator(base*1.5, "sine").connect(delay).start();
- const oscGS = new Tone.FMOscillator(base*1.6875, "sine").connect(delay).start();
- const oscA = new Tone.FMOscillator(base*(5/3), "sine").connect(delay).start();
- const oscAS = new Tone.FMOscillator(base*1.8, "sine").connect(delay).start();
- const oscB = new Tone.FMOscillator(base*1.875, "sine").connect(delay).start();
+ const oscC = new Tone.FMOscillator({frequency: base, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscCS = new Tone.FMOscillator({frequency: base*2, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscD = new Tone.FMOscillator({frequency: base*1.125, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscDS = new Tone.FMOscillator({frequency: base*2.25, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscE = new Tone.FMOscillator({frequency: base*1.25, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscF = new Tone.FMOscillator({frequency: base*(4/3), type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscFS = new Tone.FMOscillator({frequency: base*2.1825, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscG = new Tone.FMOscillator({frequency: base*1.5, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscGS = new Tone.FMOscillator({frequency: base*1.6875, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscA = new Tone.FMOscillator({frequency: base*(5/3), type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscAS = new Tone.FMOscillator({frequency: base*1.8, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
+ const oscB = new Tone.FMOscillator({frequency: base*1.875, type: "sawtooth", modulationType: "sine" }).connect(autoFilter3).start();
 
 var oscillators = [oscC, oscCS, oscD, oscDS, oscE, oscF, oscFS, oscG, oscGS, oscA, oscAS, oscB]
-console.log(oscillators)
-console.log("test");
+console.log(oscillators);
+
 
 
 
@@ -219,7 +237,7 @@ console.log("test");
         p.hit( Num.randomRange(-5,5), Num.randomRange(-2, 2) );
         world.add( p );
         const drone = new Tone.PWMOscillator(base, 0.3+1/1000).connect(autoFilter2).start();
-        drone.volume.value = -80;
+        drone.volume.value = -90;
         drones.push(drone);
      
       }
@@ -286,11 +304,11 @@ console.log("test");
       savedAlpha = newAlpha;
 
      // Main oscillators are controlled by the position of each shape - height controls volume, horizontal positon controls FM modulation 
-      var volumeMultiplier = 2
-      var volumeAdd = -20
+      var volumeMultiplier = 0.5
+      var volumeAdd = 0
     var h = space.height+100;
     var w = space.width*2;
-    var volC = 40 * Math.log((h-world.body("C")[0].y)/h);
+    var volC = 40 * (Math.log((h-world.body("C")[0].y)/h));
     if (volC <= 0) {
         oscC.volume.value = volC*volumeMultiplier+volumeAdd;
     };
@@ -444,10 +462,11 @@ console.log("test");
                 console.log(lastOctave+4);
 
                 oscillators[lastNoteNumber].frequency.value = base/2*lastRatio*(lastOctave+1);
-                autoFilter.filter.Q.value=lastVelocity/16;
-                autoFilter2.filter.Q.value=lastVelocity/8;
-                delay.feedback.value=lastVelocity/128;
-                delay2.feedback.value=lastVelocity/128;
+                autoFilter.filter.Q.value=lastVelocity/32;
+                autoFilter2.filter.Q.value=lastVelocity/16;
+                autoFilter3.filter.baseFrequency.value=100+lastVelocity*100+lastOctave*10;
+                delay.feedback.value=lastVelocity/512;
+                delay2.feedback.value=lastVelocity/512;
                 delay.delayTime.value=(lastOctave+1)/11
                 delay2.delayTime.value=0.05+(lastOctave+1)/11
                  delay.feedback.value=lastVelocity/128;
